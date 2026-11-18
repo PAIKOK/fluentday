@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+__pycache__/
+.venv/
+.DS_Store
+
+# Dictionary PDFs are private: upload them through the admin page, never commit them.
+books/
+*.pdf
