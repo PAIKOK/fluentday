@@ -2,7 +2,7 @@
 # Values marked `sync: false` are asked for when you create it; never commit them.
 services:
   - type: web
-    name: fluentday-api  # must match the address in frontend/vercel.json
+    name: fluentday-api  # must match the address in vercel.json
     runtime: python
     plan: free
     rootDir: backend
