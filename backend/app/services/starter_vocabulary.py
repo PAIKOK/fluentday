@@ -55,6 +55,8 @@ def load_starter_vocabulary(db: Database, words: list[dict]) -> LoadStats:
         for field in ("part_of_speech", "pronunciation", "level"):
             if not doc.get(field) and w[field]:
                 fill[field] = w[field]
+        if doc.get("definition_source") == {"dataset": DATASET} and doc.get("level") != w["level"]:
+            fill["level"] = w["level"]  # a starter word follows the file's levels when they change
         if not doc.get("definition"):
             fill.update(definition=w["definition"], definition_source={"dataset": DATASET}, part_of_speech=w["part_of_speech"])
         if fill.keys() == {"starter_rank"} and doc.get("starter_rank") == w["rank"]:

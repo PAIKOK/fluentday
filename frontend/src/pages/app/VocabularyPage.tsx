@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, RotateCcw } from 'lucide-react'
+import { BookOpen, Plus, RotateCcw } from 'lucide-react'
 import { Alert } from '@/components/common/Alert'
 import { EmptyState } from '@/components/common/EmptyState'
 import { LoadState } from '@/components/common/LoadState'
@@ -11,6 +11,7 @@ import { useAuth } from '@/features/auth/AuthContext'
 import { VocabularyCard } from '@/features/vocabulary/VocabularyCard'
 import { useSpeech } from '@/features/vocabulary/useSpeech'
 import { useApiQuery } from '@/hooks/useApiQuery'
+import { api, errorMessage } from '@/lib/api'
 import { formatLongDate } from '@/lib/date'
 import type { Lesson, LessonWord, WordProgress } from '@/types/lesson'
 
@@ -36,8 +37,25 @@ export function VocabularyPage() {
   const { me } = useAuth()
   const speech = useSpeech(me?.profile.accent ?? 'british')
   const { data, error, isLoading, reload } = useApiQuery<Lesson>('/lessons/today')
+  // The lesson as returned by "more words", which replaces the one first loaded.
+  const [extended, setExtended] = useState<Lesson | null>(null)
   const [updates, setUpdates] = useState<ProgressById>({})
-  const lesson = applyUpdates(data, updates)
+  const [adding, setAdding] = useState(false)
+  const [moreError, setMoreError] = useState<string | null>(null)
+  const lesson = applyUpdates(extended ?? data, updates)
+  const level = me?.profile.proficiency_level ?? 'beginner'
+
+  async function addMore() {
+    setAdding(true)
+    setMoreError(null)
+    try {
+      setExtended(await api<Lesson>('/lessons/today/more', { method: 'POST' }))
+    } catch (e) {
+      setMoreError(errorMessage(e))
+    } finally {
+      setAdding(false)
+    }
+  }
 
   function onProgress(wordId: string, progress: WordProgress) {
     setUpdates((current) => ({ ...current, [wordId]: progress }))
@@ -98,6 +116,30 @@ export function VocabularyPage() {
               ))}
             </div>
           </section>
+        )}
+
+        {lesson && lesson.kind !== 'empty' && (lesson.can_add_more || moreError) && (
+          <div className="mt-10 rounded-2xl bg-card p-5 shadow-soft ring-1 ring-border/60">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="mr-auto max-w-xl">
+                <h2 className="font-semibold">Want more words?</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Words are picked for your level: <span className="font-medium capitalize text-foreground">{level}</span>. Too easy? Choose a
+                  higher level in{' '}
+                  <Link to="/app/settings" className="font-medium text-forest-700 underline">
+                    Settings
+                  </Link>{' '}
+                  first.
+                </p>
+              </div>
+              {lesson.can_add_more && (
+                <Button onClick={addMore} disabled={adding}>
+                  <Plus /> {adding ? 'Adding words…' : `Give me ${lesson.target} more words`}
+                </Button>
+              )}
+            </div>
+            {moreError && <Alert tone="info" className="mt-4">{moreError}</Alert>}
+          </div>
         )}
       </LoadState>
     </>

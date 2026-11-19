@@ -58,6 +58,7 @@ class LessonOut(BaseModel):
     revision_words: list[LessonWord]
     learned_count: int
     target: int
+    can_add_more: bool = False
 
 
 class DashboardWord(BaseModel):

@@ -13,7 +13,7 @@ function visit(path: string) {
 }
 
 function lesson(overrides: Partial<Lesson> = {}): Lesson {
-  return { lesson_date: '2026-11-17', kind: 'new', level: 'intermediate', words: [lessonWord()], revision_words: [], learned_count: 0, target: 7, ...overrides }
+  return { lesson_date: '2026-11-17', kind: 'new', level: 'intermediate', words: [lessonWord()], revision_words: [], learned_count: 0, target: 7, can_add_more: true, ...overrides }
 }
 
 const me = () => ({ status: 200, body: makeMe() })
@@ -40,6 +40,33 @@ describe('daily vocabulary', () => {
     visit('/app/vocabulary')
     expect(await screen.findByText('Definition written by the FluentDay team')).toBeInTheDocument()
     expect(screen.getByText('AI-generated example')).toBeInTheDocument()
+  })
+
+  it('adds seven more words when the learner asks, keeping their progress', async () => {
+    const second = lessonWord({ id: 'w2', word: 'lucid' })
+    const fetchMock = mockApi({
+      'GET /api/auth/me': me,
+      'GET /api/lessons/today': () => ({ status: 200, body: lesson() }),
+      'POST /api/lessons/today/more': () => ({ status: 200, body: lesson({ words: [lessonWord(), second], can_add_more: false }) }),
+    })
+    visit('/app/vocabulary')
+    expect(await screen.findByText(/picked for your level/)).toHaveTextContent('intermediate')
+    fireEvent.click(screen.getByRole('button', { name: 'Give me 7 more words' }))
+    expect(await screen.findByRole('link', { name: 'lucid' })).toBeInTheDocument()
+    expect(screen.getByText('Word 2 of 2')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /more words/ })).toBeNull()
+    expect(fetchMock.mock.calls.some(([url, init]) => String(url) === '/api/lessons/today/more' && init?.method === 'POST')).toBe(true)
+  })
+
+  it('explains when no more words can be added today', async () => {
+    mockApi({
+      'GET /api/auth/me': me,
+      'GET /api/lessons/today': () => ({ status: 200, body: lesson() }),
+      'POST /api/lessons/today/more': () => ({ status: 409, body: { detail: 'That’s 28 words today, the most for one day. Come back tomorrow for more!' } }),
+    })
+    visit('/app/vocabulary')
+    fireEvent.click(await screen.findByRole('button', { name: 'Give me 7 more words' }))
+    expect(await screen.findByText(/Come back tomorrow/)).toBeInTheDocument()
   })
 
   it('marks a word as learned and updates the progress bar', async () => {

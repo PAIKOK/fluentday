@@ -27,7 +27,7 @@ describe('starter vocabulary', () => {
     window.history.pushState({}, '', '/admin/vocabulary')
     render(<App />)
 
-    expect(await screen.findByText(/2,739 of the most useful everyday English words/)).toBeInTheDocument()
+    expect(await screen.findByText(/2,739 useful English words, from everyday to academic/)).toBeInTheDocument()
     expect(screen.getByText('Load the starter vocabulary or upload a vocabulary book.')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: /Load starter vocabulary/ }))
 

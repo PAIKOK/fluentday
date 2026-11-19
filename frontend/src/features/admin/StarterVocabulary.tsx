@@ -39,7 +39,7 @@ export function StarterVocabulary({ onLoaded }: { onLoaded: () => void }) {
         <div className="mr-auto max-w-2xl">
           <h2 className="font-display font-semibold">Starter vocabulary</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {data.words_in_file.toLocaleString()} of the most useful everyday English words, with definitions, examples and
+            {data.words_in_file.toLocaleString()} useful English words, from everyday to academic, with definitions, examples and
             synonyms from Open English WordNet. {data.loaded.toLocaleString()} loaded so far.
           </p>
         </div>

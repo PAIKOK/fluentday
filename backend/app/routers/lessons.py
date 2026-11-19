@@ -18,7 +18,16 @@ from app.schemas.lessons import (
 )
 from app.schemas.vocabulary import Example
 from app.services.activity import active_dates
-from app.services.lessons import DAILY_WORD_COUNT, attach_videos, generate_lesson, lesson_date_for, streak_days
+from app.services.lessons import (
+    DAILY_WORD_COUNT,
+    MAX_EXTRA_SETS,
+    NoMoreWords,
+    add_more_words,
+    attach_videos,
+    generate_lesson,
+    lesson_date_for,
+    streak_days,
+)
 from app.services.notebook import create_entry, save_word, unsave_word, word_sentences
 from app.services.pronunciation import challenge_done
 from app.services.quiz import daily_quiz_done
@@ -117,9 +126,7 @@ def _dashboard_videos(db: Database, user_id: ObjectId, video_ids: list[ObjectId]
     ]
 
 
-@router.get("/lessons/today", response_model=LessonOut)
-def today(user: dict = Depends(get_current_user), db: Database = Depends(get_db)):
-    lesson = today_lesson(db, user)
+def lesson_out(db: Database, user: dict, lesson: dict) -> LessonOut:
     words = lesson_words(db, user["_id"], lesson["word_ids"])
     return LessonOut(
         lesson_date=lesson["lesson_date"],
@@ -129,7 +136,23 @@ def today(user: dict = Depends(get_current_user), db: Database = Depends(get_db)
         revision_words=lesson_words(db, user["_id"], lesson.get("revision_word_ids", [])),
         learned_count=sum(1 for w in words if w.progress.status != "new"),
         target=DAILY_WORD_COUNT,
+        can_add_more=lesson["kind"] != "empty" and lesson.get("extra_sets", 0) < MAX_EXTRA_SETS,
     )
+
+
+@router.get("/lessons/today", response_model=LessonOut)
+def today(user: dict = Depends(get_current_user), db: Database = Depends(get_db)):
+    return lesson_out(db, user, today_lesson(db, user))
+
+
+@router.post("/lessons/today/more", response_model=LessonOut)
+def more_words(user: dict = Depends(get_current_user), db: Database = Depends(get_db)):
+    """Another set of new words for today, for learners who want more (or found today's too easy)."""
+    try:
+        lesson = add_more_words(db, user, get_profile(db, user))
+    except NoMoreWords as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+    return lesson_out(db, user, attach_videos(db, lesson))
 
 
 @router.get("/dashboard", response_model=DashboardOut)

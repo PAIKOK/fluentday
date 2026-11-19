@@ -12,12 +12,14 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from bson import ObjectId
 from pymongo.database import Database
+from pymongo import ReturnDocument
 from pymongo.errors import DuplicateKeyError
 
 from app.db import utcnow
 from app.services.youtube import pick_lesson_videos
 
 DAILY_WORD_COUNT = 7
+MAX_EXTRA_SETS = 3  # a learner can ask for up to 3 more sets of 7 words a day
 LEVELS = ("beginner", "intermediate", "advanced")
 DEFAULT_TIMEZONE = "Asia/Kolkata"
 
@@ -152,12 +154,43 @@ def generate_lesson(db: Database, user: dict, profile: dict, now: datetime | Non
         # Another request created today's lesson at the same moment.
         return GenerationResult(db.daily_lessons.find_one({"user_id": user["_id"], "lesson_date": lesson_date}), created=False)
 
+    _start_progress(db, user["_id"], lesson, new_ids)
+    return GenerationResult(lesson, created=True)
+
+
+class NoMoreWords(Exception):
+    """The learner can't get more words today: the daily limit is reached, or every word has been given."""
+
+
+def add_more_words(db: Database, user: dict, profile: dict, now: datetime | None = None) -> dict:
+    """Adds another set of new words to today's lesson, at the learner's current level."""
+    lesson = generate_lesson(db, user, profile, now=now).lesson
+    extra_sets = lesson.get("extra_sets", 0)
+    if extra_sets >= MAX_EXTRA_SETS:
+        raise NoMoreWords(f"That's {DAILY_WORD_COUNT * (MAX_EXTRA_SETS + 1)} words today, the most for one day. Come back tomorrow for more!")
+    seed = f"{user['_id']}:{lesson['lesson_date']}:more{extra_sets + 1}"
+    new_ids = choose_words(_eligible_new_words(db, user["_id"]), profile.get("proficiency_level"), DAILY_WORD_COUNT, seed)
+    if not new_ids:
+        raise NoMoreWords("You've been given every word we have. New words will appear here as they're added.")
+    updated = db.daily_lessons.find_one_and_update(
+        # Matching the count means two quick clicks can't both add a set.
+        {"_id": lesson["_id"], "extra_sets": lesson.get("extra_sets", {"$exists": False})},
+        {"$push": {"word_ids": {"$each": new_ids}}, "$set": {"kind": "new"}, "$inc": {"extra_sets": 1}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if updated is None:  # the other click won; show its words
+        return db.daily_lessons.find_one({"_id": lesson["_id"]})
+    _start_progress(db, user["_id"], updated, new_ids)
+    return updated
+
+
+def _start_progress(db: Database, user_id: ObjectId, lesson: dict, word_ids: list[ObjectId]) -> None:
     now_ts = utcnow()
-    for word_id in new_ids:
+    for word_id in word_ids:
         db.user_vocabulary_progress.update_one(
-            {"user_id": user["_id"], "word_id": word_id},
+            {"user_id": user_id, "word_id": word_id},
             {"$setOnInsert": {
-                "first_lesson_date": lesson_date,
+                "first_lesson_date": lesson["lesson_date"],
                 "lesson_id": lesson["_id"],
                 "status": "new",
                 "difficult": False,
@@ -170,7 +203,6 @@ def generate_lesson(db: Database, user: dict, profile: dict, now: datetime | Non
             }},
             upsert=True,
         )
-    return GenerationResult(lesson, created=True)
 
 
 def attach_videos(db: Database, lesson: dict) -> dict:

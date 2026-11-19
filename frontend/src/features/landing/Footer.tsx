@@ -29,6 +29,8 @@ export function Footer() {
           <p>
             Word list:{' '}
             <a href="https://www.newgeneralservicelist.com/" className="underline hover:text-forest">New General Service List</a>{' '}
+            and{' '}
+            <a href="https://www.newgeneralservicelist.com/new-academic-word-list" className="underline hover:text-forest">New Academic Word List</a>{' '}
             (<a href="https://creativecommons.org/licenses/by-sa/4.0/" className="underline hover:text-forest">CC BY-SA 4.0</a>).
             Definitions and examples:{' '}
             <a href="https://en-word.net/" className="underline hover:text-forest">Open English WordNet</a>{' '}

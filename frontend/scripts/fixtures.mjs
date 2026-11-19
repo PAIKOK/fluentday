@@ -54,7 +54,7 @@ export function fixtures(role) {
         { id: 'v2', title: 'Why do we dream?', channel_name: 'BBC Learning English — 6 Minute English', thumbnail_url: 'https://i.ytimg.com/vi/bbbbbbbbbbb/hqdefault.jpg', duration_seconds: 375, completed: true },
       ],
     },
-    'GET /api/lessons/today': { lesson_date: '2026-11-17', kind: 'new', level: 'intermediate', words, revision_words: [], learned_count: 1, target: 7 },
+    'GET /api/lessons/today': { lesson_date: '2026-11-17', kind: 'new', level: 'intermediate', words, revision_words: [], learned_count: 1, target: 7, can_add_more: true },
     'GET /api/vocabulary/w1': words[0],
     'GET /api/revision/queue': { today: '2026-11-18', words: [{ ...words[0], progress: progress({ status: 'learned', difficult: true }) }] },
     'GET /api/revision/calendar': { month: '2026-11', today: '2026-11-18', total_stages: 4, days: days('2026-11', 30, { '2026-11-16': { due: 2, reviewed: 0 }, '2026-11-17': { reviewed: 5 }, '2026-11-18': { due: 1 }, '2026-11-20': { due: 4 }, '2026-11-25': { due: 3 } }) },

@@ -40,6 +40,8 @@ def test_word_list_reads_ngsl_csv_in_order():
     text = "Lemma,SFI Rank,SFI\nthe,1,87\nrun,2,80\nRun,3,1\n## comment\nhappy,4,70\n"
     assert read_word_list(text) == ["the", "run", "happy"]
     assert [level_for_rank(r) for r in (1, 1000, 1001, 2001)] == ["beginner", "beginner", "intermediate", "advanced"]
+    # With the academic list after the everyday one, only the academic words are advanced.
+    assert [level_for_rank(r, 2800) for r in (1000, 2001, 2799, 2800)] == ["beginner", "intermediate", "intermediate", "advanced"]
 
 
 def test_build_picks_the_main_meaning_and_cleans_it_up():
@@ -70,6 +72,11 @@ def test_loading_is_approved_repeatable_and_keeps_book_words(db):
     again = load_starter_vocabulary(db, words)
     assert (again.added, again.updated) == (0, 0)
     assert db.vocabulary_words.count_documents({}) == 2
+
+    words[0]["level"] = "advanced"  # a newer file moves "run" up a level
+    load_starter_vocabulary(db, words)
+    assert db.vocabulary_words.find_one({"word_key": "run"})["level"] == "advanced"
+    assert db.vocabulary_words.find_one({"word_key": "happy"})["level"] is None  # book words keep their own
 
 
 def test_admin_loads_the_bundled_file(admin_client, client, db):

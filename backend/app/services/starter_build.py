@@ -1,7 +1,8 @@
 """Builds the starter vocabulary file: everyday English words with definitions, ready for daily lessons.
 
 The word list is the New General Service List (NGSL 1.2, CC BY-SA 4.0): the ~2,800 words that cover
-most of everyday English, in order of usefulness. Definitions, examples, synonyms, antonyms and
+most of everyday English, in order of usefulness, followed by the New Academic Word List (NAWL 1.2,
+CC BY-SA 4.0): ~960 harder words used in study, work and the news. Definitions, examples, synonyms, antonyms and
 pronunciations come from Open English WordNet (CC BY 4.0).
 
 `build_starter_words` turns the two downloads into a small JSON file
@@ -22,6 +23,7 @@ from typing import IO
 STARTER_FILE = Path(__file__).resolve().parents[2] / "data" / "starter_vocabulary.json"
 ATTRIBUTION = [
     "Word list: New General Service List (NGSL) 1.2 by Browne, Culligan & Phillips, CC BY-SA 4.0, newgeneralservicelist.com",
+    "Advanced words: New Academic Word List (NAWL) 1.2 by Browne, Culligan & Phillips, CC BY-SA 4.0, newgeneralservicelist.com",
     "Definitions, examples, synonyms and pronunciations: Open English WordNet 2024, CC BY 4.0, en-word.net",
 ]
 
@@ -33,8 +35,12 @@ MAX_EXAMPLE_CHARS = 300
 GRAMMAR_WORDS = {"can", "could", "will", "would", "may", "might", "must", "shall", "should", "ought"}
 
 
-def level_for_rank(rank: int) -> str:
-    """The 1,000 most useful words are beginner, the next 1,000 intermediate, the rest advanced."""
+def level_for_rank(rank: int, advanced_from: int | None = None) -> str:
+    """The 1,000 most useful words are beginner. With an academic list (starting at rank `advanced_from`),
+    the rest of the everyday list is intermediate and the academic words advanced; without one, the
+    next 1,000 are intermediate and the rest advanced."""
+    if advanced_from is not None:
+        return "beginner" if rank <= 1000 else "intermediate" if rank < advanced_from else "advanced"
     return "beginner" if rank <= 1000 else "intermediate" if rank <= 2000 else "advanced"
 
 
@@ -77,8 +83,11 @@ class _Entry:
     senses: list[tuple[str, list[str]]]  # (synset id, antonym sense ids), most common sense first
 
 
-def build_starter_words(wordnet_xml: IO[bytes], word_list: list[str]) -> tuple[list[dict], list[str]]:
-    """Returns (words, missing). `missing` are list words WordNet has no entry for (mostly "the", "of", …)."""
+def build_starter_words(
+    wordnet_xml: IO[bytes], word_list: list[str], advanced_from: int | None = None
+) -> tuple[list[dict], list[str]]:
+    """Returns (words, missing). `missing` are list words WordNet has no entry for (mostly "the", "of", …).
+    `advanced_from` is the rank where the academic words start, if `word_list` includes them."""
     wanted = set(word_list)
     entries: dict[str, list[_Entry]] = {}
     entry_lemma: dict[str, str] = {}
@@ -149,7 +158,7 @@ def build_starter_words(wordnet_xml: IO[bytes], word_list: list[str]) -> tuple[l
             "examples": [sentence(x) for x in examples if len(x) < MAX_EXAMPLE_CHARS and uses_word(x, word, entry.forms)][:MAX_EXAMPLES],
             "synonyms": synonyms[:MAX_RELATED],
             "antonyms": antonyms[:MAX_RELATED],
-            "level": level_for_rank(rank),
+            "level": level_for_rank(rank, advanced_from),
         })
     return words, missing
 

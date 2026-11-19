@@ -76,14 +76,17 @@ cp .env.example .env        # then fill in MONGODB_URI and ADMIN_EMAILS
   production (localhost is fine for development).
 - **Sample data:** `.venv/bin/python -m scripts.sample_pdfs` writes two small dictionary-style PDFs to
   `backend/sample-data/` that you can upload in the admin dashboard.
-- **Starter vocabulary:** `backend/data/starter_vocabulary.json` holds 2,739 everyday words: the
-  [New General Service List](https://www.newgeneralservicelist.com/) (CC BY-SA 4.0), with definitions,
+- **Starter vocabulary:** `backend/data/starter_vocabulary.json` holds 3,686 words: the
+  [New General Service List](https://www.newgeneralservicelist.com/) of everyday words and the
+  [New Academic Word List](https://www.newgeneralservicelist.com/new-academic-word-list) (both CC BY-SA 4.0), with definitions,
   examples, synonyms and pronunciations from [Open English WordNet](https://en-word.net/) (CC BY 4.0).
   Admins load it with **Load starter vocabulary** on the Vocabulary page; the words arrive approved, with
-  levels by usefulness (top 1,000 beginner, next 1,000 intermediate, the rest advanced). Loading again
-  is safe, and book words are never overwritten. To rebuild the file from fresh downloads:
-  `python3 -m scripts.build_starter_vocabulary english-wordnet-2024.xml.gz NGSL_12_stats.csv`.
-  The site footer credits both sources, as their licences require.
+  levels (the 1,000 most useful everyday words beginner, the other everyday words intermediate, the academic
+  words advanced). Loading again is safe, and book words are never overwritten. To rebuild the file from fresh downloads:
+  `python3 -m scripts.build_starter_vocabulary english-wordnet-2024.xml.gz NGSL_12_stats.csv NAWL_12_lemmatized_for_teaching.csv`.
+  The site footer credits all three sources, as their licences require.
+- **More words:** learners who want more can press "Give me 7 more words" on Daily Vocabulary, up to 3 extra
+  sets a day, picked at their current level (so changing the level in Settings takes effect straight away).
 
 ## Running the frontend
 

@@ -45,6 +45,8 @@ export interface Lesson {
   revision_words: LessonWord[]
   learned_count: number
   target: number
+  /** The learner can still ask for another set of words today. */
+  can_add_more: boolean
 }
 
 export interface DashboardData {

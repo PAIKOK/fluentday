@@ -1,10 +1,13 @@
 from datetime import datetime, timezone
 
+import pytest
 from bson import ObjectId
 
 from app.db import utcnow
 from app.services.lessons import (
     DAILY_WORD_COUNT,
+    NoMoreWords,
+    add_more_words,
     choose_words,
     generate_for_all_users,
     generate_lesson,
@@ -139,6 +142,34 @@ def test_daily_job_skips_disabled_learners_and_logs_the_run(db):
     assert db.job_runs.count_documents({"job": "generate_daily_lessons"}) == 2
 
 
+def test_more_words_adds_new_sets_at_the_current_level_up_to_the_daily_limit(db):
+    easy = add_words(db, 7, "beginner")
+    hard = add_words(db, 40, "advanced")
+    user, profile = learner(db, "beginner")
+    first = generate_lesson(db, user, profile, now=on(17)).lesson
+    assert set(first["word_ids"]) == set(easy)
+
+    profile["proficiency_level"] = "advanced"  # found today's too easy and changed level in Settings
+    lesson = add_more_words(db, user, profile, now=on(17))
+    assert len(lesson["word_ids"]) == 14 and set(lesson["word_ids"][7:]) <= set(hard)
+    assert db.user_vocabulary_progress.count_documents({"user_id": user["_id"]}) == 14
+    add_more_words(db, user, profile, now=on(17))
+    add_more_words(db, user, profile, now=on(17))
+    with pytest.raises(NoMoreWords):
+        add_more_words(db, user, profile, now=on(17))
+    lesson = db.daily_lessons.find_one({"_id": first["_id"]})
+    assert len(lesson["word_ids"]) == len(set(lesson["word_ids"])) == 28  # no repeats
+
+
+def test_more_words_stops_when_every_word_has_been_given(db):
+    add_words(db, 9)
+    user, profile = learner(db)
+    generate_lesson(db, user, profile, now=on(17))
+    assert len(add_more_words(db, user, profile, now=on(17))["word_ids"]) == 9
+    with pytest.raises(NoMoreWords, match="every word"):
+        add_more_words(db, user, profile, now=on(17))
+
+
 # --- API -------------------------------------------------------------------------
 
 
@@ -159,6 +190,13 @@ def test_today_endpoint_progress_and_privacy(client, db):
     dash = client.get("/api/dashboard").json()
     assert dash["words_learned_total"] == 1 and dash["streak_days"] == 1
     assert sum(w["learned"] for w in dash["words_today"]) == 1
+
+    assert lesson["can_add_more"] is True
+    more = client.post("/api/lessons/today/more")
+    assert more.status_code == 200 and len(more.json()["words"]) == 10  # only 3 words were left
+    assert more.json()["words"][0]["progress"]["status"] == "learned"  # earlier progress is kept
+    r = client.post("/api/lessons/today/more")
+    assert r.status_code == 409 and "every word" in r.json()["detail"]
 
     assert client.delete(f"/api/vocabulary/{word['id']}/sentences/{sentence_id}").json()["my_sentences"] == []
 
