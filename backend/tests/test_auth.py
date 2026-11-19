@@ -108,3 +108,8 @@ def test_subscribers_cannot_use_admin_api(client, db):
     assert client.get("/api/admin/vocabulary").status_code == 403
     client.post("/api/auth/logout")
     assert client.get("/api/admin/books").status_code == 401
+
+
+def test_api_address_sends_visitors_to_the_website(client, settings):
+    r = client.get("/", follow_redirects=False)
+    assert r.status_code == 307 and r.headers["location"] == settings.frontend_url

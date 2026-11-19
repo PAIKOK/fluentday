@@ -3,7 +3,7 @@ import secrets
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo.database import Database
 from pymongo.errors import PyMongoError
@@ -122,6 +122,11 @@ def create_app(settings: Settings | None = None, db: Database | None = None) -> 
     @app.get("/api/health", tags=["health"])
     def health() -> dict:
         return {"status": "ok"}
+
+    @app.api_route("/", methods=["GET", "HEAD"], include_in_schema=False)
+    def root() -> RedirectResponse:
+        """This server is only the API; anyone who opens its address is sent to the website."""
+        return RedirectResponse(settings.frontend_url)
 
     return app
 
