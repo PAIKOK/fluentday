@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     vapid_subject: str = "mailto:no-reply@fluentday.app"
     # A reminder is still sent this long after the chosen time (e.g. if the scheduler was down), never later.
     reminder_window_minutes: int = 180
+    # Lets a free external job (GitHub Actions) trigger the scheduler: POST /api/internal/run-scheduler.
+    scheduler_token: str = ""
 
     max_pdf_mb: int = 50
     # Proxies in front of the server that add to X-Forwarded-For (Vercel rewrite + Render = 2). 0 = connect directly.

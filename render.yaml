@@ -1,0 +1,41 @@
+# Render Blueprint for the FluentDay backend (free plan). Render → New → Blueprint → pick this repo.
+# Values marked `sync: false` are asked for when you create it; never commit them.
+services:
+  - type: web
+    name: fluentday-api  # must match the address in frontend/vercel.json
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: ENVIRONMENT
+        value: production
+      - key: FRONTEND_URL  # your Vercel address, e.g. https://fluentday.vercel.app (no slash at the end)
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: fluentday
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SCHEDULER_TOKEN  # copy it into the GitHub secret of the same name
+        generateValue: true
+      - key: ADMIN_EMAILS
+        value: jyothikaks023@gmail.com
+      - key: TRUSTED_PROXY_HOPS  # Vercel's proxy + Render's: rate limits see each visitor's real IP
+        value: "2"
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER  # the Gmail address that sends FluentDay's emails
+        sync: false
+      - key: SMTP_PASSWORD  # a Gmail app password, not your normal password
+        sync: false
+      - key: SMTP_FROM  # e.g. FluentDay <the same Gmail address>
+        sync: false

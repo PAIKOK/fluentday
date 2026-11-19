@@ -106,18 +106,26 @@ version required by newer Vite releases.
 
 ## Deploying
 
-**Frontend (Vercel):** import the project, set **Root Directory** to `frontend`, and deploy.
-`frontend/vercel.json` builds the site, sends every `/api/...` request to the backend (so the login
-cookie stays on your site's own address), serves `index.html` for app pages, and adds security headers.
+Everything runs on free plans: **MongoDB Atlas** (database), **Render** (backend, `render.yaml`),
+**Vercel** (frontend, `frontend/vercel.json`) and **GitHub Actions** (reminders, `.github/workflows/scheduler.yml`).
 
-- The backend address in `vercel.json` is `https://fluentday-api.onrender.com`. If your backend lives
-  somewhere else, change that one line.
-- On the backend, set `FRONTEND_URL` to your Vercel address, `ENVIRONMENT=production` and
-  `TRUSTED_PROXY_HOPS=2` (Vercel + Render), so rate limits see each visitor's real IP.
-- `package-lock.json` was created with the company npm mirror, which Vercel can't reach. Regenerate
-  it against the public registry before the first Vercel build.
-- Vercel limits the size of requests it forwards, so very large dictionary PDF uploads may fail
-  through it. Check this on the first upload.
+1. **Atlas:** Network Access → allow `0.0.0.0/0` (Render's free plan has no fixed IP). Copy the connection string.
+2. **Gmail app password** (for sign-up, reset and reminder emails): turn on 2-Step Verification, then create an
+   app password at myaccount.google.com/apppasswords.
+3. **Render:** New → Blueprint → this repo. Fill in `MONGODB_URI`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`
+   and `FRONTEND_URL` (your Vercel address). The service must be called `fluentday-api`, because
+   `frontend/vercel.json` sends `/api` requests to `https://fluentday-api.onrender.com`.
+4. **Vercel:** import this repo, set **Root Directory** to `frontend`, no environment variables. Then put the
+   Vercel address in Render's `FRONTEND_URL`.
+5. **GitHub:** Settings → Secrets and variables → Actions → new secret `SCHEDULER_TOKEN`, with the value Render
+   generated (Render → fluentday-api → Environment). Run the "Reminders" workflow once from the Actions tab.
+6. **Content:** sign up with the admin email (`ADMIN_EMAILS`), then Admin → Vocabulary → **Load starter vocabulary**.
+
+Notes:
+- `package-lock.json` must point at the public npm registry (`registry.npmjs.org`) for Vercel to install.
+- The free Render server sleeps after 15 minutes without requests; the scheduler job every 10 minutes keeps it
+  awake. GitHub pauses scheduled jobs in repositories with no activity for 60 days; re-enable it in the Actions tab.
+- Vercel limits the size of requests it forwards, so very large PDF uploads may fail through it.
 
 ## Roadmap
 

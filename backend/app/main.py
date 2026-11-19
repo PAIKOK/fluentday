@@ -16,6 +16,7 @@ from app.routers import (
     admin_vocabulary,
     admin_youtube,
     auth,
+    internal,
     lessons,
     listening,
     notebook,
@@ -113,7 +114,7 @@ def create_app(settings: Settings | None = None, db: Database | None = None) -> 
     routers = (
         auth.router, profile.router, lessons.router, listening.router, notebook.router, revision.router,
         pronunciation.router, quiz.router, progress.router, notifications.router,
-        admin_books.router, admin_vocabulary.router, admin_youtube.router, admin_users.router,
+        admin_books.router, admin_vocabulary.router, admin_youtube.router, admin_users.router, internal.router,
     )
     for router in routers:
         app.include_router(router, prefix="/api")
