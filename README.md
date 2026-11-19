@@ -51,7 +51,8 @@ cp .env.example .env        # then fill in MONGODB_URI and ADMIN_EMAILS
   database (everything is lost when it stops). Good for trying the app; use a real MongoDB for anything else.
 - **First admin:** put your email in `ADMIN_EMAILS` before registering, or run
   `.venv/bin/python -m scripts.set_role you@example.com admin`.
-- **Emails in development:** with `SMTP_HOST` empty, verification and reset emails are printed in the
+- **Sign-up:** there is no email confirmation step; a new account is logged in straight away.
+- **Emails in development:** with `SMTP_HOST` empty, password-reset and reminder emails are printed in the
   backend terminal. Open the link from there.
 - **Daily lessons:** a learner's lesson is created the first time they open the app each day (in their
   timezone). To prepare everyone's lesson in advance, run `.venv/bin/python -m scripts.generate_daily_lessons`
@@ -110,8 +111,9 @@ Everything runs on free plans: **MongoDB Atlas** (database), **Render** (backend
 **Vercel** (frontend, `vercel.json`) and **GitHub Actions** (reminders, `.github/workflows/scheduler.yml`).
 
 1. **Atlas:** Network Access → allow `0.0.0.0/0` (Render's free plan has no fixed IP). Copy the connection string.
-2. **Gmail app password** (for sign-up, reset and reminder emails): turn on 2-Step Verification, then create an
-   app password at myaccount.google.com/apppasswords.
+2. **Email** (for password-reset and reminder emails): Render's free plan blocks Gmail's SMTP ports, so use
+   [Brevo](https://www.brevo.com/) (free): verify your sender address, create an SMTP key, and set
+   `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=2525`, `SMTP_USER` (Brevo's SMTP login) and `SMTP_PASSWORD` (the key).
 3. **Render:** New → Blueprint → this repo. Fill in `MONGODB_URI`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`
    and `FRONTEND_URL` (your Vercel address). The service must be called `fluentday-api`, because
    `vercel.json` sends `/api` requests to `https://fluentday-api.onrender.com`.
@@ -144,7 +146,7 @@ Before going live:
 - Behind a reverse proxy, run uvicorn with `--proxy-headers --forwarded-allow-ips=<proxy IP>` so rate limits see
   real client addresses, and cap request bodies at the proxy too.
 - Learner data is always filtered by the logged-in user; admin routes require the admin role; vocabulary PDFs are
-  only downloadable by admins. Confirming an email needs the sign-up password, and "Log out of all devices" in
+  only downloadable by admins. "Log out of all devices" in
   Settings ends every session.
 
 ## Data rules

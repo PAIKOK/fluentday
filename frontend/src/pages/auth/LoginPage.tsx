@@ -4,7 +4,7 @@ import { Alert } from '@/components/common/Alert'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
 import { useAuth } from '@/features/auth/AuthContext'
-import { ApiError, errorMessage } from '@/lib/api'
+import { errorMessage } from '@/lib/api'
 import { AuthLayout } from './AuthLayout'
 
 export function LoginPage() {
@@ -12,19 +12,16 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [unverified, setUnverified] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     setSubmitting(true)
     setError(null)
-    setUnverified(false)
     try {
       // On success the auth state changes and <RedirectIfSignedIn> takes the user onwards.
       await login(email, password)
     } catch (e) {
-      setUnverified(e instanceof ApiError && e.code === 'email_not_verified')
       setError(errorMessage(e))
     } finally {
       setSubmitting(false)
@@ -45,19 +42,7 @@ export function LoginPage() {
       }
     >
       <form onSubmit={onSubmit} className="space-y-5" noValidate>
-        {error && (
-          <Alert tone="error">
-            {error}
-            {unverified && (
-              <>
-                {' '}
-                <Link to={`/check-email?email=${encodeURIComponent(email)}`} className="font-medium underline">
-                  Resend the confirmation email
-                </Link>
-              </>
-            )}
-          </Alert>
-        )}
+        {error && <Alert tone="error">{error}</Alert>}
         <div>
           <Label htmlFor="email">Email</Label>
           <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />

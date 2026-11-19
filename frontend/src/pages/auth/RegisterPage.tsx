@@ -1,14 +1,15 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Alert } from '@/components/common/Alert'
 import { Button } from '@/components/ui/button'
 import { Input, Label } from '@/components/ui/input'
+import { useAuth } from '@/features/auth/AuthContext'
 import { api, errorMessage } from '@/lib/api'
-import type { Message } from '@/types/auth'
+import type { Me } from '@/types/auth'
 import { AuthLayout } from './AuthLayout'
 
 export function RegisterPage() {
-  const navigate = useNavigate()
+  const { setMe } = useAuth()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,8 +23,8 @@ export function RegisterPage() {
     setError(null)
     try {
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      await api<Message>('/auth/register', { method: 'POST', json: { full_name: fullName, email, password, timezone } })
-      navigate(`/check-email?email=${encodeURIComponent(email)}`)
+      // Signed in straight away; <RedirectIfSignedIn> then takes the learner into the app.
+      setMe(await api<Me>('/auth/register', { method: 'POST', json: { full_name: fullName, email, password, timezone } }))
     } catch (e) {
       setError(errorMessage(e))
     } finally {

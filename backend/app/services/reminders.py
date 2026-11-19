@@ -205,7 +205,7 @@ def retry_failed(db: Database, settings: Settings, now: datetime) -> int:
 def dispatch_reminders(db: Database, settings: Settings, now: datetime | None = None) -> DispatchSummary:
     now = now or datetime.now(timezone.utc)
     summary = DispatchSummary()
-    for user in db.users.find({"email_verified": True, "disabled": {"$ne": True}}):
+    for user in db.users.find({"disabled": {"$ne": True}}):
         profile = db.profiles.find_one({"user_id": user["_id"]})
         if not profile:
             continue

@@ -118,11 +118,11 @@ def test_empty_lesson_when_nothing_is_approved(db):
     assert lesson["kind"] == "empty"
 
 
-def test_daily_job_covers_verified_learners_only_and_logs_the_run(db):
+def test_daily_job_skips_disabled_learners_and_logs_the_run(db):
     add_words(db, 30)
     learner(db)
     learner(db)
-    db.users.insert_one({"_id": ObjectId(), "email": "new@example.com", "email_verified": False})
+    db.users.insert_one({"_id": ObjectId(), "email": "gone@example.com", "disabled": True})
     first = generate_for_all_users(db, now=on(17))
     second = generate_for_all_users(db, now=on(17))
     assert (first.created, first.existing) == (2, 0)

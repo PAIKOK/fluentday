@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BookCheck, BookOpenText, FileText, Flag, UserCheck, Users } from 'lucide-react'
+import { BookCheck, BookOpenText, FileText, Flag, Users } from 'lucide-react'
 import { LoadState } from '@/components/common/LoadState'
 import { PageHeader } from '@/components/common/PageHeader'
 import { StatCard } from '@/components/common/StatCard'
@@ -29,7 +29,6 @@ export function AdminOverviewPage() {
             <StatCard icon={BookCheck} label="Approved words" value={data.words_approved} hint="Only approved words are used in daily lessons." tone="sage" />
             <StatCard icon={Flag} label="Flagged for review" value={data.words_needing_review} hint={`${data.words_pending} pending in total`} tone="coral" />
             <StatCard icon={Users} label="Registered users" value={data.users_total} tone="forest" />
-            <StatCard icon={UserCheck} label="Confirmed emails" value={data.users_verified} tone="sage" />
           </div>
         )}
       </LoadState>

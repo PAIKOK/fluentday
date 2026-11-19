@@ -93,32 +93,6 @@ describe('email unsubscribe', () => {
 })
 
 describe('security', () => {
-  it('confirms an email only with the sign-up password, and offers a reset when it is wrong', async () => {
-    const sent: unknown[] = []
-    let attempts = 0
-    mockApi({
-      'GET /api/auth/me': signedOut,
-      'GET /api/notifications/unread-count': () => ({ status: 200, body: { unread: 0 } }),
-      'GET /api/dashboard': () => ({ status: 200, body: dashboard() }),
-      'POST /api/auth/verify-email': (init) => {
-        sent.push(JSON.parse(String(init?.body)))
-        attempts += 1
-        return attempts === 1
-          ? { status: 400, body: { detail: { code: 'wrong_password', message: 'That isn’t the password chosen when this account was created.' } } }
-          : { status: 200, body: makeMe() }
-      },
-    })
-    visit('/verify-email?token=tok-1234567890')
-    fireEvent.change(await screen.findByLabelText('Password'), { target: { value: 'guess' } })
-    fireEvent.click(screen.getByRole('button', { name: /Confirm and start learning/ }))
-    expect(await screen.findByRole('link', { name: 'Reset the password' })).toHaveAttribute('href', '/forgot-password')
-
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'correct-horse-battery' } })
-    fireEvent.click(screen.getByRole('button', { name: /Confirm and start learning/ }))
-    expect(await screen.findByRole('heading', { name: 'Make FluentDay yours' })).toBeInTheDocument()
-    expect(sent).toEqual([{ token: 'tok-1234567890', password: 'guess' }, { token: 'tok-1234567890', password: 'correct-horse-battery' }])
-  })
-
   it('logs out of all devices from settings', async () => {
     const fetchMock = mockApi({
       'GET /api/auth/me': me,

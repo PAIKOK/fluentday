@@ -28,22 +28,6 @@ describe('login', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Incorrect email or password.')
   })
 
-  it('offers to resend the confirmation email for unverified accounts', async () => {
-    mockApi({
-      'GET /api/auth/me': signedOut,
-      'POST /api/auth/login': () => ({
-        status: 403,
-        body: { detail: { code: 'email_not_verified', message: 'Please confirm your email address first.' } },
-      }),
-    })
-    visit('/login')
-    await fillLogin('ana@example.com', 'a-good-password')
-    expect(await screen.findByRole('link', { name: /resend the confirmation email/i })).toHaveAttribute(
-      'href',
-      '/check-email?email=ana%40example.com',
-    )
-  })
-
   it('returns to the page the learner originally wanted', async () => {
     mockApi({
       'GET /api/auth/me': signedOut,
@@ -53,6 +37,36 @@ describe('login', () => {
     await fillLogin('ana@example.com', 'a-good-password')
     expect(await screen.findByRole('heading', { name: 'Check what you remember' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/app/quiz')
+  })
+})
+
+describe('register', () => {
+  it('signs the learner straight in, with no confirmation email step', async () => {
+    const fetchMock = mockApi({
+      'GET /api/auth/me': signedOut,
+      'POST /api/auth/register': () => ({ status: 201, body: makeMe() }),
+    })
+    visit('/register')
+    fireEvent.change(await screen.findByLabelText('Your name'), { target: { value: 'Ana Silva' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ana@example.com' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'a-good-password' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }))
+    await vi.waitFor(() => expect(window.location.pathname).toBe('/app'))
+    const [, init] = fetchMock.mock.calls.find(([url]) => String(url) === '/api/auth/register')!
+    expect(JSON.parse(String(init!.body))).toMatchObject({ full_name: 'Ana Silva', email: 'ana@example.com' })
+  })
+
+  it('shows the server’s error when the email is already registered', async () => {
+    mockApi({
+      'GET /api/auth/me': signedOut,
+      'POST /api/auth/register': () => ({ status: 409, body: { detail: 'An account with this email already exists. Please log in instead.' } }),
+    })
+    visit('/register')
+    fireEvent.change(await screen.findByLabelText('Your name'), { target: { value: 'Ana' } })
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'ana@example.com' } })
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'a-good-password' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create account' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('already exists')
   })
 })
 

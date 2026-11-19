@@ -18,7 +18,7 @@ const check = (cond, msg) => {
 }
 
 // Pages that render without signing in. (/app and /admin need the backend; see README.)
-const ROUTES = ['/', '/about', '/contact', '/privacy', '/terms', '/does-not-exist', '/login', '/register', '/forgot-password', '/reset-password?token=example-token', '/check-email?email=ana%40example.com', '/verify-email', '/unsubscribe?token=example-token-123']
+const ROUTES = ['/', '/about', '/contact', '/privacy', '/terms', '/does-not-exist', '/login', '/register', '/forgot-password', '/reset-password?token=example-token', '/unsubscribe?token=example-token-123']
 // Without a backend the session check (/api/auth/me) fails; that is expected here.
 const EXPECTED_ERROR = /Failed to load resource: the server responded with a status of (401|500|502|504)|Something went wrong \((500|502|504)\)|The FluentDay server isn’t responding/
 const WIDTHS = [[375, 812], [768, 1024], [1280, 900]]

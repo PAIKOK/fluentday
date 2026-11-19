@@ -21,12 +21,10 @@ import { RevisionPage } from '@/pages/app/RevisionPage'
 import { SettingsPage } from '@/pages/app/SettingsPage'
 import { VocabularyPage } from '@/pages/app/VocabularyPage'
 import { WordDetailPage } from '@/pages/app/WordDetailPage'
-import { CheckEmailPage } from '@/pages/auth/CheckEmailPage'
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
-import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { AboutPage } from '@/pages/public/AboutPage'
 import { ContactPage } from '@/pages/public/ContactPage'
@@ -52,8 +50,6 @@ export default function App() {
 
           <Route path="login" element={<RedirectIfSignedIn><LoginPage /></RedirectIfSignedIn>} />
           <Route path="register" element={<RedirectIfSignedIn><RegisterPage /></RedirectIfSignedIn>} />
-          <Route path="check-email" element={<CheckEmailPage />} />
-          <Route path="verify-email" element={<VerifyEmailPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="unsubscribe" element={<UnsubscribePage />} />

@@ -39,12 +39,6 @@ class TokenIn(BaseModel):
     token: str = Field(min_length=10, max_length=200)
 
 
-class VerifyEmailIn(TokenIn):
-    # The password chosen at sign-up. Asking for it stops someone who registered another person's email
-    # (with a password they know) from keeping access once that person clicks the confirmation link.
-    password: str = Field(min_length=1, max_length=200)
-
-
 class ResetPasswordIn(TokenIn):
     password: str
 

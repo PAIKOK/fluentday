@@ -6,7 +6,7 @@ export interface AuthState {
   isLoading: boolean
   login: (email: string, password: string) => Promise<Me>
   logout: () => Promise<void>
-  /** Replace the signed-in user (after email verification) or just the profile (after saving settings). */
+  /** Replace the signed-in user (after signing up) or just the profile (after saving settings). */
   setMe: (me: Me | null) => void
   setProfile: (profile: Profile) => void
 }

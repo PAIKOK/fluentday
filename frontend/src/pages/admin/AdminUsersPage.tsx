@@ -60,7 +60,6 @@ export function AdminUsersPage() {
                         <div className="flex items-center gap-2 font-medium">
                           {u.full_name || '—'}
                           {u.role === 'admin' && <Badge variant="coral">Admin</Badge>}
-                          {!u.email_verified && <Badge variant="outline">Unconfirmed</Badge>}
                         </div>
                         <div className="text-muted-foreground">{u.email}</div>
                       </td>

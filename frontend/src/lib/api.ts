@@ -1,4 +1,4 @@
-/** Error thrown for any non-2xx API response. `code` is set for structured errors (e.g. email_not_verified). */
+/** Error thrown for any non-2xx API response. `code` is set when the server sends a structured error. */
 export class ApiError extends Error {
   status: number
   code?: string

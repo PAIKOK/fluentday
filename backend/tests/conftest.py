@@ -36,10 +36,9 @@ def last_token(db, email: str) -> str:
 
 
 def sign_up(client, db, email: str, name: str = "Test Learner") -> None:
+    """Registers and leaves the client logged in as that account."""
     r = client.post("/api/auth/register", json={"email": email, "password": PASSWORD, "full_name": name})
     assert r.status_code == 201, r.text
-    r = client.post("/api/auth/verify-email", json={"token": last_token(db, email), "password": PASSWORD})
-    assert r.status_code == 200, r.text
 
 
 @pytest.fixture

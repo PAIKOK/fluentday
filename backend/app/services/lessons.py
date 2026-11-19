@@ -182,10 +182,10 @@ def attach_videos(db: Database, lesson: dict) -> dict:
 
 
 def generate_for_all_users(db: Database, now: datetime | None = None) -> JobSummary:
-    """The scheduled daily job: prepares today's lesson for every active, verified learner."""
+    """The scheduled daily job: prepares today's lesson for every active learner."""
     summary = JobSummary()
     started = utcnow()
-    users = db.users.find({"email_verified": True, "disabled": {"$ne": True}})
+    users = db.users.find({"disabled": {"$ne": True}})
     for user in users:
         profile = db.profiles.find_one({"user_id": user["_id"]}) or {}
         try:

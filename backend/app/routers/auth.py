@@ -8,7 +8,7 @@ from app.config import Settings
 from app.db import utcnow
 from app.deps import client_ip, get_app_settings, get_current_user, get_db
 from app.mailer import send_email
-from app.schemas.auth import EmailIn, LoginIn, MessageOut, RegisterIn, ResetPasswordIn, VerifyEmailIn
+from app.schemas.auth import EmailIn, LoginIn, MessageOut, RegisterIn, ResetPasswordIn
 from app.schemas.profile import MeOut
 from app.security import (
     SESSION_COOKIE,
@@ -22,7 +22,6 @@ from app.services.users import default_profile, me_out
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-VERIFY_TTL = timedelta(hours=24)
 RESET_TTL = timedelta(hours=1)
 # Compared against when an email isn't registered, so login takes the same time either way.
 _DUMMY_HASH = hash_password("fluentday-timing-equaliser")
@@ -59,19 +58,6 @@ def _consume_token(db: Database, raw: str, purpose: str) -> dict:
     return user
 
 
-def _send_verification(db: Database, settings: Settings, user: dict) -> None:
-    raw = _issue_token(db, user, "verify_email", VERIFY_TTL)
-    link = f"{settings.frontend_url}/verify-email?token={raw}"
-    send_email(
-        db,
-        settings,
-        user["email"],
-        "Confirm your FluentDay email",
-        f"Welcome to FluentDay!\n\nConfirm your email address to start learning:\n{link}\n\n"
-        "This link expires in 24 hours. If you did not create an account, you can ignore this email.",
-    )
-
-
 def _set_session(response: Response, settings: Settings, user: dict) -> None:
     token = create_session_token(str(user["_id"]), user.get("token_version", 0), settings.jwt_secret, settings.access_token_days)
     response.set_cookie(
@@ -85,13 +71,15 @@ def _set_session(response: Response, settings: Settings, user: dict) -> None:
     )
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=MessageOut)
+@router.post("/register", status_code=status.HTTP_201_CREATED, response_model=MeOut)
 def register(
     body: RegisterIn,
     request: Request,
+    response: Response,
     db: Database = Depends(get_db),
     settings: Settings = Depends(get_app_settings),
 ):
+    """Creates the account and logs the learner straight in (there is no email confirmation step)."""
     _limit(request, "register", client_ip(request))
     email = body.email.lower()
     now = utcnow()
@@ -103,22 +91,15 @@ def register(
         "token_version": 0,
         "created_at": now,
         "updated_at": now,
+        "last_login_at": now,
     }
-    message = MessageOut(message="Check your email to confirm your address and finish signing up.")
     try:
         user["_id"] = db.users.insert_one(user).inserted_id
     except DuplicateKeyError:
-        # Same answer as a new sign-up, so nobody can test which emails are registered. The owner is told by email.
-        send_email(
-            db, settings, email, "You already have a FluentDay account",
-            "Someone tried to create a FluentDay account with this email address, but you already have one.\n\n"
-            f"Log in: {settings.frontend_url}/login\nForgot your password? {settings.frontend_url}/forgot-password\n\n"
-            "If this wasn't you, you can ignore this email.",
-        )
-        return message
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists. Please log in instead.")
     db.profiles.insert_one(default_profile(user["_id"], body.full_name, body.timezone))
-    _send_verification(db, settings, user)
-    return message
+    _set_session(response, settings, user)
+    return me_out(db, user)
 
 
 @router.post("/login", response_model=MeOut)
@@ -135,11 +116,6 @@ def login(
     password_ok = verify_password(body.password, user["password_hash"] if user else _DUMMY_HASH)
     if user is None or not password_ok or user.get("disabled"):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Incorrect email or password.")
-    if not user.get("email_verified"):
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN,
-            {"code": "email_not_verified", "message": "Please confirm your email address first."},
-        )
     _set_session(response, settings, user)
     db.users.update_one({"_id": user["_id"]}, {"$set": {"last_login_at": utcnow()}})
     return me_out(db, user)
@@ -165,46 +141,6 @@ def logout_all(
 @router.get("/me", response_model=MeOut)
 def me(user: dict = Depends(get_current_user), db: Database = Depends(get_db)):
     return me_out(db, user)
-
-
-@router.post("/verify-email", response_model=MeOut)
-def verify_email(
-    body: VerifyEmailIn,
-    request: Request,
-    response: Response,
-    db: Database = Depends(get_db),
-    settings: Settings = Depends(get_app_settings),
-):
-    _limit(request, "login", f"verify:{client_ip(request)}")
-    token = db.auth_tokens.find_one({"token_hash": hash_token(body.token), "purpose": "verify_email", "expires_at": {"$gt": utcnow()}})
-    pending = db.users.find_one({"_id": token["user_id"]}) if token else None
-    if pending is not None and not verify_password(body.password, pending["password_hash"]):
-        # The link stays valid so the learner can try again.
-        raise HTTPException(
-            status.HTTP_400_BAD_REQUEST,
-            {"code": "wrong_password", "message": "That isn't the password chosen when this account was created. "
-                                                  "If you didn't sign up yourself, use “Forgot password” to take over the account safely."},
-        )
-    user = _consume_token(db, body.token, "verify_email")
-    db.users.update_one({"_id": user["_id"]}, {"$set": {"email_verified": True, "updated_at": utcnow()}})
-    user["email_verified"] = True
-    _set_session(response, settings, user)
-    return me_out(db, user)
-
-
-@router.post("/resend-verification", response_model=MessageOut)
-def resend_verification(
-    body: EmailIn,
-    request: Request,
-    db: Database = Depends(get_db),
-    settings: Settings = Depends(get_app_settings),
-):
-    email = body.email.lower()
-    _limit_email(request, "verify", email)
-    user = db.users.find_one({"email": email})
-    if user and not user.get("email_verified"):
-        _send_verification(db, settings, user)
-    return MessageOut(message="If that account needs confirming, we have sent a new link.")
 
 
 @router.post("/forgot-password", response_model=MessageOut)
