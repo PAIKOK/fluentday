@@ -123,7 +123,10 @@ def generate_lesson(db: Database, user: dict, profile: dict, now: datetime | Non
     lesson_date = lesson_date_for(tz_name, now)
     existing = db.daily_lessons.find_one({"user_id": user["_id"], "lesson_date": lesson_date})
     if existing:
-        return GenerationResult(existing, created=False)
+        if existing["kind"] != "empty" or not _eligible_new_words(db, user["_id"]):
+            return GenerationResult(existing, created=False)
+        # Words were published after today's empty lesson was made, so make it again with them.
+        db.daily_lessons.delete_one({"_id": existing["_id"], "kind": "empty"})
 
     level = profile.get("proficiency_level")
     new_ids = choose_words(_eligible_new_words(db, user["_id"]), level, DAILY_WORD_COUNT, f"{user['_id']}:{lesson_date}")

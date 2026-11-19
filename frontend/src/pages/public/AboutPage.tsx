@@ -16,7 +16,7 @@ export function AboutPage() {
       <section>
         <h2>Trustworthy content</h2>
         <p>
-          Vocabulary comes from curated English vocabulary books, with the source and page shown for every word.
+          Vocabulary comes from a curated list of the most useful everyday English words, with the source shown for every word.
           Listening lessons come from respected channels such as BBC Learning English. Where we use AI to add extra
           examples, we label it clearly.
         </p>

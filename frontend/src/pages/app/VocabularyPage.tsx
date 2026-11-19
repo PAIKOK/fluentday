@@ -50,7 +50,7 @@ export function VocabularyPage() {
       <PageHeader
         eyebrow={lesson ? formatLongDate(new Date(`${lesson.lesson_date}T12:00:00`)) : 'Daily Vocabulary'}
         title={lesson?.kind === 'revision' ? 'Today’s revision' : 'Today’s words'}
-        description="Every word comes from FluentDay’s vocabulary books, with its source and page number."
+        description="Seven new words a day, each with its meaning, examples and where it comes from."
       />
       <LoadState isLoading={isLoading} error={error} onRetry={reload} hasData={lesson !== null}>
         {lesson && lesson.kind === 'empty' && (

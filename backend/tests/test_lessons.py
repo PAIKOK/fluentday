@@ -118,6 +118,15 @@ def test_empty_lesson_when_nothing_is_approved(db):
     assert lesson["kind"] == "empty"
 
 
+def test_empty_lesson_is_remade_once_words_are_published(db):
+    user, profile = learner(db)
+    assert generate_lesson(db, user, profile, now=on(17)).lesson["kind"] == "empty"
+    add_words(db, 10)
+    lesson = generate_lesson(db, user, profile, now=on(17)).lesson
+    assert lesson["kind"] == "new" and len(lesson["word_ids"]) == 7
+    assert db.daily_lessons.count_documents({"user_id": user["_id"]}) == 1
+
+
 def test_daily_job_skips_disabled_learners_and_logs_the_run(db):
     add_words(db, 30)
     learner(db)
